@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GEO-SENTINEL — Professional Surveying Command Center v7.0</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app">
+
+<!-- TOP NAV -->
+<header class="nav">
+  <a class="nav-logo" href="#">
+    <div class="nav-ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    </div>
+    <div class="nav-brand">GEO-SENTINEL<small>4D GEODETIC COMMAND CENTER v5.0</small></div>
+  </a>
+  <div class="nav-div"></div>
+  <nav class="nav-tabs">
+    <button class="nt on" onclick="goTab('mission',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Mission Planner</button>
+    <button class="nt" onclick="goTab('field',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Field Mode</button>
+    <button class="nt" onclick="goTab('map',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Map &amp; Globe</button>
+    <button class="nt" onclick="goTab('pulse',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Sentinel-Pulse</button>
+  </nav>
+  <div class="nav-r">
+    <div class="pdot"></div>
+    <span class="nav-clock" id="clock">--:--:-- UTC</span>
+    <span id="kpBadge" style="display:none;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;font-family:'Courier Prime',monospace;cursor:pointer" onclick="goTab('mission')"></span>
+    <button class="nav-btn" onclick="showSinkAlert()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></button>
+  </div>
+</header>
+
+<div class="body">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-s">
+    <div class="sb-h">Modules</div>
+    <button class="sb-b on" onclick="goTab('mission',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Mission Planner<span class="sb-chip">4</span></button>
+    <button class="sb-b" onclick="goTab('field',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Field Mode</button>
+    <button class="sb-b" onclick="goTab('map',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Map &amp; Globe</button>
+    <button class="sb-b" onclick="goTab('pulse',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Sentinel-Pulse<span class="sb-chip w">!</span></button>
+  </div>
+  <div class="sb-line"></div>
+  <div class="sb-s">
+    <div class="sb-h">Map Layers</div>
+    <button class="sb-b" onclick="toggleLayer('heatmap',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>RTK Heatmap</button>
+    <button class="sb-b" onclick="toggleLayer('path',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Golden Path</button>
+    <button class="sb-b" onclick="toggleLayer('points',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Survey Points</button>
+    <button class="sb-b" onclick="generateAdvancedHeatmap();goTab('map',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></svg>3-Layer Heatmap</button>
+  </div>
+  <div class="sb-line"></div>
+  <div class="sb-s">
+    <div class="sb-h">Export</div>
+    <button class="sb-b" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Export CSV</button>
+    <button class="sb-b" onclick="exportLandXML()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>LandXML (Civil 3D)</button>
+    <button class="sb-b" onclick="exportKML()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Export KML</button>
+  </div>
+  <div class="gnss-ft">
+    <div class="gnss-pill"><div class="pdot"></div><div><div class="gnss-v" id="gnssStatus">GNSS LOCK &middot; 14 SVs</div><div class="gnss-s" id="gnssDetail">PDOP: 1.4 | RTK Fixed</div></div></div>
+  </div>
+</aside>
+
+<main class="content">
+
+<!-- MISSION PLANNER -->
+<div id="pane-mission" class="pane on">
+<div class="pi">
+  <div class="ptr">
+    <div><div class="ptitle">MISSION PLANNER</div><div class="psub">Plan survey &middot; Upload data &middot; Generate Golden Path &middot; Auto space weather</div></div>
+    <button class="btn btn-p btn-field" onclick="planSurvey()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Plan Survey</button>
+  </div>
+
+  <!-- Auto Space Weather -->
+  <div class="kpcard">
+    <div style="z-index:1">
+      <div class="kp-lbl">Space Weather &middot; Auto-fetched NOAA + X-ray Flux</div>
+      <div style="display:flex;align-items:baseline;gap:9px;margin-top:3px"><div class="kp-num" id="kpNum">--</div><div class="kp-stat" id="kpStat">Fetching live data...</div></div>
+      <div style="margin-top:8px;font-size:12px;opacity:.75;font-family:'Courier Prime',monospace">Auto-checks every 10 min &middot; Solar flare X-ray alert enabled</div>
+    </div>
+    <div class="kp-wrap">
+      <div class="kp-segs" id="kpSegs"><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div><div class="kp-seg"></div></div>
+      <div class="kp-hint">1 = Quiet &nbsp;&middot;&nbsp; 5 = Active &nbsp;&middot;&nbsp; 9 = Extreme</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="sg">
+    <div class="sb"><div class="sv" id="statWP">4</div><div class="sl">Waypoints</div></div>
+    <div class="sb"><div class="sv" id="statPts">0</div><div class="sl">Points Captured</div></div>
+    <div class="sb"><div class="sv" id="statArea">--</div><div class="sl">Path km</div></div>
+    <div class="sb"><div class="sv" id="statFix" style="color:var(--ok)">--%</div><div class="sl">FIX Reliability</div></div>
+  </div>
+
+  <!-- Task 3: Height Picker Buttons -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Rover Height Picker (Suggested Range)</div>
+    <div style="font-size:13.5px;color:var(--t2);margin-bottom:14px">Tap a height button. Calibrated to common obstacle clearance. No imprecise slider.</div>
+    <div class="height-btns">
+      <button class="hb" onclick="selectHeight(1.5,this)">1.5m</button>
+      <button class="hb" onclick="selectHeight(2.0,this)">2.0m</button>
+      <button class="hb sel" onclick="selectHeight(2.5,this)">2.5m</button>
+      <button class="hb" onclick="selectHeight(2.6,this)">2.6m</button>
+      <button class="hb" onclick="selectHeight(2.8,this)">2.8m</button>
+      <button class="hb" onclick="selectHeight(3.0,this)">3.0m</button>
+      <button class="hb" onclick="selectHeight(3.5,this)">3.5m &#9733;</button>
+      <button class="hb" onclick="selectHeight(4.0,this)">4.0m</button>
+      <button class="hb" onclick="selectHeight(4.5,this)">4.5m</button>
+      <button class="hb" onclick="selectHeight(5.0,this)">5.0m</button>
+    </div>
+    <div class="cl-note" id="clNote" style="margin-top:12px">At <strong>2.5m</strong>: Clears 4 of 7. Standard height for moderate environments.</div>
+    <div style="font-family:'Courier Prime',monospace;font-size:12px;color:var(--g);margin-top:8px;font-weight:700" id="heightFix">70% FIX probability</div>
+  </div>
+
+  <!-- Task 4: Multi-format coord input + bulk paste -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h6l1 14h1l1-14h6"/><path d="M6 8h12"/></svg>Golden Path Generator (A&#9733;) &mdash; Multi-Format Input</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.7">Accepts: <code style="background:var(--s);padding:1px 5px;border-radius:4px">-1.29, 36.82</code> &nbsp;<code style="background:var(--s);padding:1px 5px;border-radius:4px">1&deg;17'S 36&deg;49'E</code> &nbsp;<code style="background:var(--s);padding:1px 5px;border-radius:4px">236890 9856210 37S</code> (UTM)</div>
+    <div class="fg2">
+      <div class="fg"><label class="fl">Start Point</label><input class="fc" id="pathStart" placeholder="-1.2921, 36.8219  or  Name, Lat, Lon  or  UTM" value="-1.2921, 36.8219"/></div>
+      <div class="fg"><label class="fl">End Point</label><input class="fc" id="pathEnd" placeholder="-1.3188, 36.8552  or  DMS  or  UTM" value="-1.3188, 36.8552"/></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Bulk Waypoints &mdash; Paste from Excel / Notepad</label>
+      <textarea class="fc" id="bulkCoords" rows="4" placeholder="Paste multiple lines:&#10;-1.2921, 36.8219&#10;Corner-1, -1.2950, 36.8270&#10;236890 9856210 37S"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-o btn-sm" onclick="importBulkCoords()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Import Waypoints</button>
+        <button class="btn btn-gh btn-sm" onclick="document.getElementById('bulkCoords').value=''">Clear</button>
+      </div>
+      <div id="bulkResult" style="display:none;margin-top:8px;font-size:12px;color:var(--ok);font-family:'Courier Prime',monospace"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Observation Time <span style="color:var(--mu);font-size:10px;text-transform:none;font-weight:400">(override &mdash; space weather auto-fetched)</span></label>
+      <div class="tchips">
+        <div class="tc sel" onclick="pickTime(this,'06:00')">06:00</div>
+        <div class="tc" onclick="pickTime(this,'08:00')">08:00</div>
+        <div class="tc" onclick="pickTime(this,'10:00')">10:00</div>
+        <div class="tc" onclick="pickTime(this,'12:00')">12:00</div>
+        <div class="tc" onclick="pickTime(this,'14:00')">14:00</div>
+        <div class="tc" onclick="pickTime(this,'16:00')">16:00</div>
+      </div>
+    </div>
+    <button class="plan-btn" id="planBtn" onclick="planSurvey()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      GENERATE PLAN &amp; DRAW ON MAP
+    </button>
+    <div id="planResult" style="display:none;margin-top:14px"><div class="ai ok"><div class="ai-ico">&#10003;</div><div><div class="ai-msg" id="planMsg">Golden Path generated</div><div class="ai-time">Switched to Map tab automatically</div></div></div></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload Existing Survey Data</div>
+    <p style="font-size:13.5px;color:var(--t2);margin-bottom:14px;line-height:1.7">Upload CSV or KML. Points appear on map, rover height analysed, quality heatmap generated.</p>
+    <div class="upload-zone" id="uploadZone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="event.preventDefault();this.classList.remove('drag');if(event.dataTransfer.files[0])handleUpload({target:{files:event.dataTransfer.files}})">
+      <input type="file" accept=".csv,.kml,.kmz" onchange="handleUpload(event)" multiple/>
+      <div class="upload-icon">&#128194;</div>
+      <div class="upload-label">Tap to choose CSV or KML</div>
+      <div class="upload-sub">or drag &amp; drop &middot; Multiple files supported</div>
+    </div>
+    <div class="upload-results" id="uploadResults">
+      <div id="uploadCount" style="display:none"></div>
+      <table class="dt" id="uploadTable" style="display:none"><thead><tr><th>Name</th><th>Lat</th><th>Lon</th><th>H (m)</th><th>Source</th></tr></thead><tbody id="uploadBody"></tbody></table>
+    </div>
+    <div id="roverResult" style="display:none"></div>
+  </div>
+
+  <!-- Task 5: 3-Layer Heatmap -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></svg>AI 3-Layer Heatmap</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:rgba(39,174,96,.08);border:1.5px solid rgba(39,174,96,.25);border-radius:var(--r);padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#128994;</div><div style="font-size:12px;font-weight:600;color:var(--ok)">GPS Quality</div><div style="font-size:11px;color:var(--mu)">Fix/Float/Auto</div></div>
+      <div style="background:rgba(192,57,43,.08);border:1.5px solid rgba(192,57,43,.25);border-radius:var(--r);padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#127970;</div><div style="font-size:12px;font-weight:600;color:var(--red)">Building Height</div><div style="font-size:11px;color:var(--mu)">Elevation proxy</div></div>
+      <div style="background:rgba(241,196,15,.08);border:1.5px solid rgba(241,196,15,.35);border-radius:var(--r);padding:12px;text-align:center"><div style="font-size:20px;margin-bottom:4px">&#128739;</div><div style="font-size:12px;font-weight:600;color:#b7950b">Golden Path</div><div style="font-size:11px;color:var(--mu)">Survey corridor</div></div>
+    </div>
+    <button class="btn btn-p" style="width:100%;justify-content:center;padding:14px" onclick="generateAdvancedHeatmap();goTab('map')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></svg>
+      GENERATE 3-LAYER HEATMAP &amp; VIEW ON MAP
+    </button>
+  </div>
+
+  <!-- Survey Config -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Survey Configuration</div>
+    <div class="fg2">
+      <div class="fg"><label class="fl">Mission ID</label><input class="fc" value="NAIROBI-2026-043"/></div>
+      <div class="fg"><label class="fl">Survey Type</label><select class="fc"><option>Topographic</option><option>Cadastral</option><option>Hydrographic</option><option>LiDAR</option></select></div>
+      <div class="fg"><label class="fl">Datum / CRS</label><select class="fc"><option>WGS84 / UTM 37S</option><option>WGS84 Geographic</option><option>Arc1960 / UTM 37S</option></select></div>
+      <div class="fg"><label class="fl">Geoid Model</label><select class="fc"><option>EGM2008</option><option>EGM96</option><option>GEOID18</option></select></div>
+    </div>
+    <div style="display:flex;gap:9px"><button class="btn btn-p btn-sm">Save</button><button class="btn btn-gh btn-sm">Reset</button></div>
+  </div>
+
+  <!-- Waypoints -->
+  <div class="card">
+    <div class="ch" style="margin-bottom:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>Waypoints<button class="btn btn-o btn-sm" style="margin-left:auto" onclick="addWaypoint()">+ Add</button></div>
+    <div class="wl" id="waypointList">
+      <div class="wi done"><div class="wn">01</div><div class="winfo"><div class="wname">Base Station Alpha</div><div class="wcoords">-1.2921, 36.8219 &middot; 1661m</div></div><span class="badge bok">DONE</span></div>
+      <div class="wi active"><div class="wn">02</div><div class="winfo"><div class="wname">Control Point CP-07</div><div class="wcoords">-1.3054, 36.8401 &middot; 1698m</div></div><span class="badge bact">ACTIVE</span></div>
+      <div class="wi"><div class="wn">03</div><div class="winfo"><div class="wname">Traverse Point T-14</div><div class="wcoords">-1.3188, 36.8552 &middot; 1712m</div></div><span class="badge bin">PENDING</span></div>
+      <div class="wi wrn"><div class="wn">04</div><div class="winfo"><div class="wname">Check Point CK-02</div><div class="wcoords">-1.3301, 36.8630 &middot; 1724m</div></div><span class="badge bwn">OBSTRUCT.</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FIELD MODE v7 -->
+<div id="pane-field" class="pane">
+<div class="pi">
+  <div class="ptr">
+    <div><div class="ptitle">FIELD MODE</div><div class="psub">Kalman GPS &middot; Localization Shift &middot; Camera Sight &middot; CORS/NTRIP &middot; proj4 UTM</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-o btn-sm" onclick="openLocalizeModal()">📍 LOCALIZE</button>
+      <button class="btn btn-gh btn-sm" onclick="openNtripModal()">📡 NTRIP</button>
+    </div>
+  </div>
+  <div id="shiftBadge" style="display:none;background:rgba(0,181,160,.15);border:1.5px solid rgba(0,181,160,.4);border-radius:99px;padding:5px 14px;font-size:12px;font-family:'Courier Prime',monospace;color:#00b5a0;margin-bottom:10px;cursor:pointer" onclick="clearLocalization()">✓ LOCALIZATION APPLIED — tap to clear</div>
+  <div class="pick-hero">
+    <div class="pick-label">GNSS TEMPORAL AVERAGING &mdash; 30 SAMPLES &middot; KALMAN FILTER</div>
+    <div class="pick-timer" id="pickTimer" style="display:none">30</div>
+    <button class="pick-btn" id="pickBtn" onclick="checkAndStartCapture()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+      PICK POINT
+    </button>
+    <div class="pick-chips"><div class="pchip"><div class="dot"></div>GPS ACTIVE</div><div class="pchip" id="svChip">&#128225; -- SVs</div><div class="pchip" id="accChip">&plusmn; -- m</div></div>
+    <div class="pick-hint">GPS permission checked first. <strong>watchPosition</strong> keeps signal warm. <strong>Kalman filter</strong> removes drift. Localization offset auto-applied if set.</div>
+  </div>
+
+  <!-- Camera-Aided Picking -->
+  <div class="card">
+    <div class="ch">📷 Camera-Aided Picking &mdash; Crosshair Sight</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-o" onclick="toggleCamera()" style="flex:1;min-width:120px">📷 Toggle Camera</button>
+      <div id="camOffsetRow" style="flex:1;min-width:120px">
+        <label class="fl">Lens→Antenna offset (cm)</label>
+        <input id="camOffset" class="fc" type="number" value="5" min="0" max="50" step="1"/>
+      </div>
+    </div>
+    <div id="cameraContainer" style="display:none;position:relative;border-radius:var(--r);overflow:hidden;background:#000">
+      <video id="cameraFeed" style="width:100%;max-height:280px;object-fit:cover;display:block" autoplay muted playsinline></video>
+      <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center">
+        <div style="position:relative;width:70px;height:70px">
+          <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(231,76,60,.95);transform:translateY(-50%)"></div>
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(231,76,60,.95);transform:translateX(-50%)"></div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;border:2px solid rgba(231,76,60,.95);border-radius:50%"></div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:8px;left:10px;font-size:11px;color:rgba(255,255,255,.8);font-family:'Courier Prime',monospace;background:rgba(0,0,0,.4);padding:2px 8px;border-radius:4px">AIM CROSSHAIR AT NAIL/IPC/PILLAR</div>
+    </div>
+    <div style="font-size:11px;color:var(--mu);margin-top:8px">Aim at your survey mark, then press PICK POINT while camera is visible.</div>
+  </div>
+
+  <!-- Live UTM -->
+  <div class="card">
+    <div class="ch">📐 Live Coordinates &mdash; WGS84 + UTM (proj4.js)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="db"><div class="dsym">Easting (X)</div><div class="dnum" id="liveE" style="font-size:15px;color:#00b5a0">--</div><div class="dunit">metres</div></div>
+      <div class="db"><div class="dsym">Northing (Y)</div><div class="dnum" id="liveN" style="font-size:15px;color:#00b5a0">--</div><div class="dunit">metres</div></div>
+      <div class="db"><div class="dsym">UTM Zone</div><div class="dnum" id="liveZone" style="font-size:15px;color:var(--t2)">--</div><div class="dunit">zone/hemi</div></div>
+    </div>
+  </div>
+
+  <!-- Kalman Progress -->
+  <div class="card">
+    <div class="ch"><div class="cdot"></div>Kalman-Filtered Averaging Progress</div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--t2);margin-bottom:7px"><span id="kalLabel">Waiting for capture...</span><span id="kalCount">0 / 30</span></div>
+    <div class="kbar"><div class="kfill" id="kalFill"></div></div>
+    <div class="slog" id="sLog">Awaiting GPS lock... (watchPosition + enableHighAccuracy)</div>
+  </div>
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"/><path d="M12 6v6l4 2"/></svg>Vertical Datum Bridge &mdash; EGM2008 (8dp)</div>
+    <div class="dg">
+      <div class="db"><div class="dsym">h (Ellipsoidal)</div><div class="dnum" id="datH">--</div><div class="dunit">m above WGS84</div></div>
+      <div class="db"><div class="dsym">N (Geoid)</div><div class="dnum" id="datN">--</div><div class="dunit">EGM2008 undulation</div></div>
+      <div class="db hi"><div class="dsym">H (Orthometric)</div><div class="dnum" id="datH2" style="color:var(--g)">--</div><div class="dunit">m above MSL</div></div>
+    </div>
+    <div class="dform"><strong>H = h &minus; N</strong> &nbsp;&middot;&nbsp; Orthometric = Ellipsoidal &minus; Geoid Undulation &nbsp;&middot;&nbsp; 8dp output</div>
+  </div>
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Live Sky-Mask &amp; Multipath Guidance</div>
+    <div class="sky-wrap">
+      <div class="sky-ring"><canvas id="skyCanvas" width="150" height="150"></canvas></div>
+      <div class="sky-info">
+        <div class="sky-guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg><span>Move <strong>2m North</strong> to reduce multipath. NE sector obstructed.</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--t2)"><span style="width:11px;height:11px;border-radius:50%;background:var(--ok);flex-shrink:0;display:inline-block"></span>Clear sky &mdash; 5 sats</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--t2)"><span style="width:11px;height:11px;border-radius:50%;background:var(--red);flex-shrink:0;display:inline-block"></span>NE blocked &mdash; building</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--t2)"><span style="width:11px;height:11px;border-radius:50%;background:var(--or);flex-shrink:0;display:inline-block"></span>W moderate &mdash; trees</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Data Vault -->
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Data Vault &mdash; Captured Points<span class="sb-chip" id="statPts" style="margin-left:auto">0</span></div>
+    <div style="overflow-x:auto">
+      <table class="dt">
+        <thead><tr><th>Name</th><th>Lat (8dp)</th><th>Lon (8dp)</th><th>E (m)</th><th>N (m)</th><th>h(m)</th><th>Geoid N</th><th>H(m)</th><th>Acc</th><th>Fix</th></tr></thead>
+        <tbody id="vaultBody"><tr><td colspan="10" style="text-align:center;color:var(--mu);padding:24px">No points yet. Press PICK POINT to begin.</td></tr></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin:14px 0 10px;align-items:center">
+      <span style="font-size:12px;color:var(--mu)">Export as:</span>
+      <button class="efmt-btn on btn btn-sm btn-p" onclick="setExportFormat('csv',this)">CSV</button>
+      <button class="efmt-btn btn btn-sm btn-gh" onclick="setExportFormat('kml',this)">KML</button>
+    </div>
+    <div class="exp-btns">
+      <button class="btn btn-p btn-sm" onclick="exportCSV()">📄 CSV (8dp+UTM)</button>
+      <button class="btn btn-o btn-sm" onclick="exportLandXML()">📐 LandXML</button>
+      <button class="btn btn-gh btn-sm" onclick="exportKML()">🌍 KML (static pin)</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- MAP -->
+<div id="pane-map">
+  <div id="leaflet-map"></div>
+  <div class="map-search"><input class="map-input" id="mapSearch" placeholder="Fly to: -1.2921, 36.8219 or place name..." onkeydown="if(event.key==='Enter')flyTo()"/><button class="map-fly" onclick="flyTo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>FLY TO</button></div>
+  <div class="view-tog"><button class="vb on" id="vStreet" onclick="setMapView('street')">&#128506; Street</button><button class="vb" id="vSat" onclick="setMapView('satellite')">&#128752; Satellite</button><button class="vb" id="vTopo" onclick="setMapView('topo')">&#9968; Topo</button></div>
+  <div class="map-ctrls">
+    <button class="mc" onclick="mapZoomIn()" style="font-size:20px;font-weight:700">+</button>
+    <button class="mc" onclick="mapZoomOut()" style="font-size:20px;font-weight:700">&minus;</button>
+    <button class="mc" onclick="resetMap()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg></button>
+    <button class="mc" onclick="locateMe()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+    <button class="mc" onclick="generateAdvancedHeatmap()" style="font-size:16px">&#128293;</button>
+  </div>
+  <div class="layer-panel">
+    <div class="lp-h">Map Layers</div>
+    <div class="li"><span class="ln">RTK Heatmap</span><label class="ltm"><input type="checkbox" id="lHeat" onchange="toggleMapLayer('heatmap',this.checked)"/><span class="ltm-sl"></span></label></div>
+    <div class="li"><span class="ln">Golden Path</span><label class="ltm"><input type="checkbox" id="lPath" onchange="toggleMapLayer('path',this.checked)"/><span class="ltm-sl"></span></label></div>
+    <div class="li"><span class="ln">Survey Points</span><label class="ltm"><input type="checkbox" id="lPts" checked onchange="toggleMapLayer('points',this.checked)"/><span class="ltm-sl"></span></label></div>
+    <div class="li"><span class="ln">My Location</span><label class="ltm"><input type="checkbox" id="lLoc" onchange="toggleMapLayer('location',this.checked)"/><span class="ltm-sl"></span></label></div>
+  </div>
+  <div class="map-hud">
+    <div class="hud-tiles">
+      <div class="ht"><div class="hl">Latitude</div><div class="hv" id="hudLat">--</div></div>
+      <div class="ht"><div class="hl">Longitude</div><div class="hv" id="hudLon">--</div></div>
+      <div class="ht"><div class="hl">Easting</div><div class="hv" id="hudE" style="color:#00b5a0">--</div></div>
+      <div class="ht"><div class="hl">Northing</div><div class="hv" id="hudN" style="color:#00b5a0">--</div></div>
+      <div class="ht"><div class="hl">Zone</div><div class="hv" id="hudZone" style="font-size:11px">--</div></div>
+      <div class="ht"><div class="hl">Zoom</div><div class="hv" id="hudZoom">13</div></div>
+      <div class="ht"><div class="hl">Points</div><div class="hv" id="hudPts">0</div></div>
+      <div class="ht"><div class="hl">View</div><div class="hv" id="hudView">Street</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SENTINEL PULSE -->
+<div id="pane-pulse" class="pane">
+<div class="pi">
+  <div class="ptr"><div><div class="ptitle">SENTINEL-PULSE</div><div class="psub">Environmental Oracle &middot; InSAR &middot; Bathymetry &middot; AI Erosion</div></div></div>
+  <div class="pbanner"><div class="pico"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div style="z-index:1"><div class="ptit">SENTINEL-PULSE ORACLE</div><div class="psub">Sentinel-1 InSAR &middot; Sentinel-2 SDB &middot; AI Erosion &middot; NOAA Auto Space Weather</div></div><div class="lpill">&#9679; LIVE</div></div>
+  <div class="card">
+    <div class="ch"><div class="cdot"></div>Oracle Layers</div>
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div class="tog-row"><div class="tog-info"><div class="tog-name">InSAR Subsidence Map</div><div class="tog-desc">Sentinel-1 C-Band SAR &middot; Ground movement in mm/yr</div></div><label class="tog"><input type="checkbox" onchange="toggleInsar(this.checked)"/><span class="tog-sl"></span></label></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-name">Satellite-Derived Bathymetry</div><div class="tog-desc">Sentinel-2 &middot; Stumpf log-ratio &middot; 0&ndash;25m depth</div></div><label class="tog"><input type="checkbox" onchange="toggleBathy(this.checked)"/><span class="tog-sl"></span></label></div>
+      <div class="tog-row"><div class="tog-info"><div class="tog-name">Shadow Height Extraction</div><div class="tog-desc">AI &middot; Building heights from satellite shadows</div></div><label class="tog"><input type="checkbox" onchange="addAlert('info','&#8505;',this.checked?'Shadow height active':'Disabled',nowUTC())"/><span class="tog-sl"></span></label></div>
+    </div>
+  </div>
+  <div id="insarPanel" style="display:none"><div class="card"><div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h.01M7 20v-4M12 20v-8M17 20V8M22 4v16"/></svg>InSAR Ground Subsidence (mm/yr)</div><div class="sub-wrap"><canvas id="subCanvas"></canvas><div class="mleg"><div class="mleg-i"><div class="mleg-d" style="background:#27ae60"></div>Stable 0&ndash;5</div><div class="mleg-i"><div class="mleg-d" style="background:#e67e22"></div>Moderate 5&ndash;15</div><div class="mleg-i"><div class="mleg-d" style="background:#e74c3c"></div>High &gt;15</div></div></div><div id="sinkBanner" style="display:none;margin-top:12px"><div class="ai danger" style="cursor:pointer" onclick="showSinkAlert()"><div class="ai-ico">&#9888;</div><div><div class="ai-msg">SINK ALERT &mdash; Area subsiding at 12 mm/yr</div><div class="ai-time">Click for full warning</div></div></div></div></div></div>
+  <div id="bathyPanel" style="display:none"><div class="card"><div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18s.9-2 3-2 3 2 6 2 3-2 6-2"/><path d="M3 13s.9-2 3-2 3 2 6 2 3-2 6-2"/><path d="M3 8s.9-2 3-2 3 2 6 2 3-2 6-2"/></svg>Satellite-Derived Bathymetry (SDB)</div><canvas id="bathyCanvas" style="width:100%;height:170px;display:block;border-radius:var(--r)"></canvas></div></div>
+  <div class="card">
+    <div class="ch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>AI Erosion Prediction &mdash; LSTM</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><label class="fl" style="margin:0">Prediction Year</label><div class="ey" id="erosionYear">2024</div></div>
+    <input type="range" class="rin" id="erosionSlider" min="2015" max="2035" step="1" value="2024" oninput="updateErosion(this.value)" style="--pct:45%;width:100%"/>
+    <div class="el"><span>2015 Baseline</span><span>Now</span><span>2035 Projected</span></div>
+    <div class="sw"><canvas id="shoreCanvas"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="cdot" style="background:var(--or)"></div>Alert Stream</div>
+    <div style="display:flex;flex-direction:column;gap:9px" id="alertStream">
+      <div class="ai danger"><div class="ai-ico">&#9888;</div><div><div class="ai-msg">Multipath interference on CP-07</div><div class="ai-time">10:47:22 UTC</div></div></div>
+      <div class="ai warn"><div class="ai-ico">&#9678;</div><div><div class="ai-msg">PDOP elevated: 2.8 &mdash; Additional observation recommended</div><div class="ai-time">10:45:01 UTC</div></div></div>
+      <div class="ai ok"><div class="ai-ico">&#10003;</div><div><div class="ai-msg">RTK Fixed at Base Station Alpha</div><div class="ai-time">10:38:54 UTC</div></div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+</main>
+</div>
+
+<!-- BOTTOM BAR -->
+<nav class="bbar">
+  <button class="bt on" onclick="goTab('mission',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Mission</button>
+  <button class="bt" onclick="goTab('field',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>Field</button>
+  <button class="bt" onclick="goTab('map',null,this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>Map</button>
+  <button class="bt" onclick="goTab('pulse',null,this)"><div class="bdot"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pulse</button>
+</nav>
+
+</div>
+
+<!-- MODALS -->
+<div class="mbg" id="sinkModal" onclick="if(event.target===this)closeSinkAlert()"><div class="modal"><div class="m-ico">&#9888;&#65039;</div><div class="m-ttl">SINK ALERT</div><div class="m-body"><strong>Coastal Subsidence Detected</strong><br/><br/>This area is subsiding at <strong style="color:var(--red)">12 mm/year</strong>.<br/><br/><strong>Move 500m North</strong> to stable ground.</div><div class="m-btns"><button class="btn btn-p" onclick="closeSinkAlert()">Acknowledged</button><button class="btn btn-gh" onclick="goTab('map');closeSinkAlert()">View on Map</button></div></div></div>
+
+<div class="mbg" id="gpsErrorModal" onclick="if(event.target===this)closeGPSError()"><div class="modal"><div class="m-ico">&#128205;</div><div class="m-ttl">LOCATION UNAVAILABLE</div><div class="m-body" id="gpsErrorMsg">Location permission denied. Go to browser Settings &rarr; Site Permissions &rarr; Location &rarr; Allow.</div><div class="m-btns"><button class="btn btn-p" onclick="closeGPSError()">OK</button><button class="btn btn-gh" onclick="closeGPSError();checkAndStartCapture()">Retry</button></div></div></div>
+
+<div class="mbg" id="flareModal" onclick="if(event.target===this)closeFlareModal()"><div class="modal"><div class="m-ico">&#9728;&#65039;</div><div class="m-ttl" id="flareClass">SOLAR FLARE DETECTED</div><div class="m-body">GPS Signal Interference High<br/><br/>Solar X-ray flux: <strong style="color:var(--red)" id="flareFlux">--</strong><br/><br/>RTK accuracy may be severely degraded. Consider suspending precision observations for 30&ndash;60 minutes.</div><div class="m-btns"><button class="btn btn-p" onclick="closeFlareModal()">Acknowledged</button><button class="btn btn-gh" onclick="closeFlareModal()">Continue Anyway</button></div></div></div>
+
+<div class="mbg" id="coordErrorModal" onclick="if(event.target===this)closeCoordError()"><div class="modal"><div class="m-ico">&#128208;</div><div class="m-ttl">INVALID COORDINATES</div><div class="m-body">Accepted formats:<br/><br/><code style="background:var(--s);padding:3px 7px;border-radius:4px;font-size:12px;display:block;margin:4px 0">-1.2921, 36.8219</code><code style="background:var(--s);padding:3px 7px;border-radius:4px;font-size:12px;display:block;margin:4px 0">Name, -1.29, 36.82</code><code style="background:var(--s);padding:3px 7px;border-radius:4px;font-size:12px;display:block;margin:4px 0">1&deg;17'31&quot;S 36&deg;49'19&quot;E</code><code style="background:var(--s);padding:3px 7px;border-radius:4px;font-size:12px;display:block;margin:4px 0">236890 9856210 37S (UTM)</code></div><div class="m-btns"><button class="btn btn-p" onclick="closeCoordError()">OK</button></div></div></div>
+
+<!-- NAMING MODAL — Point Name + File Name -->
+<div class="mbg" id="namingModal" onclick="if(event.target===this)closeNamingModal()">
+  <div class="modal">
+    <div class="nm-ttl">NAME THIS POINT</div>
+    <div style="font-size:13px;color:var(--mu);text-align:center;margin-bottom:16px">8dp precision &middot; Kalman-filtered &middot; EGM2008</div>
+    <div class="dsum" id="nmSummary">--</div>
+    <div class="fg"><label class="fl">Point Name <span style="color:var(--red)">*</span></label>
+      <input id="ptName" class="fc" placeholder="e.g. A, Corner-1, Tree, BM-01" style="font-size:15px;font-weight:600" autocomplete="off" onkeydown="if(event.key==='Enter')savePoint()"/>
+      <div id="ptNameErr" style="color:var(--red);font-size:12px;margin-top:4px;display:none">Name is required.</div>
+    </div>
+    <div class="fg"><label class="fl">File Name (for export)</label>
+      <input id="ptFileName" class="fc" placeholder="e.g. SurveyA_2026 (leave blank = use point name)" autocomplete="off"/>
+    </div>
+    <div class="fg"><label class="fl">Description (optional)</label>
+      <input id="ptDesc" class="fc" placeholder="e.g. SW corner plot 45, road junction" autocomplete="off"/>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Quick Labels</div>
+      <div class="qchips">
+        <button class="qc" onclick="setQuickName('Corner')">Corner</button>
+        <button class="qc" onclick="setQuickName('BM')">BM</button>
+        <button class="qc" onclick="setQuickName('CP')">CP</button>
+        <button class="qc" onclick="setQuickName('GCP')">GCP</button>
+        <button class="qc" onclick="setQuickName('Tree')">Tree</button>
+        <button class="qc" onclick="setQuickName('Pillar')">Pillar</button>
+        <button class="qc" onclick="setQuickName('A')">A</button>
+        <button class="qc" onclick="setQuickName('B')">B</button>
+        <button class="qc" onclick="setQuickName('C')">C</button>
+        <button class="qc" onclick="setQuickName('IPC')">IPC</button>
+        <button class="qc" onclick="setQuickName('Nail')">Nail</button>
+      </div>
+    </div>
+    <div class="m-btns">
+      <button class="btn btn-p btn-lg" onclick="savePoint()" style="flex:1">✓ SAVE POINT</button>
+      <button class="btn btn-gh" onclick="closeNamingModal()">Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- NTRIP MODAL -->
+<div class="mbg" id="ntripModal" onclick="if(event.target===this)closeNtripModal()">
+  <div class="modal">
+    <div class="nm-ttl">📡 CORS / NTRIP Client</div>
+    <div style="font-size:13px;color:var(--mu);text-align:center;margin-bottom:16px">Connect to a CORS network for DGPS corrections.<br/>Improves accuracy by ~40% on phones without RTK hardware.</div>
+    <div class="fg"><label class="fl">Caster Host</label><input id="ntripHost" class="fc" placeholder="e.g. ntrip.kenet.or.ke" autocomplete="off"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Port</label><input id="ntripPort" class="fc" type="number" value="2101" placeholder="2101"/></div>
+      <div class="fg"><label class="fl">Mountpoint</label><input id="ntripMount" class="fc" placeholder="e.g. NBI1"/></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="fg"><label class="fl">Username</label><input id="ntripUser" class="fc" placeholder="username" autocomplete="off"/></div>
+      <div class="fg"><label class="fl">Password</label><input id="ntripPass" class="fc" type="password" placeholder="••••••" autocomplete="off"/></div>
+    </div>
+    <div id="ntripStat" style="font-size:12px;color:rgba(255,255,255,.4);margin:10px 0;font-family:'Courier Prime',monospace;min-height:32px">Not connected</div>
+    <div style="background:rgba(241,196,15,.08);border:1px solid rgba(241,196,15,.2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:14px">
+      ⚠ Browser requires HTTPS + backend WebSocket proxy for raw TCP NTRIP. Without the Render backend deployed, this runs in simulation mode showing the accuracy boost calculation.
+    </div>
+    <div class="m-btns">
+      <button class="btn btn-p btn-lg" id="ntripConnBtn" onclick="connectNtrip()" style="flex:1">CONNECT</button>
+      <button class="btn btn-gh" onclick="closeNtripModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCALIZE MODAL -->
+<div class="mbg" id="localizeModal" onclick="if(event.target===this)closeLocalizeModal()">
+  <div class="modal">
+    <div class="nm-ttl">📍 Localization — The Shift</div>
+    <div style="font-size:13px;color:var(--mu);text-align:center;margin-bottom:16px">Stand on a known control point. Enter its known coordinates below. The app will compute the offset and apply it to all future picks, making even a basic phone accurate to the local grid.</div>
+    <div class="fg"><label class="fl">Known Latitude</label><input id="knownLat" class="fc" placeholder="e.g. -1.29214567" type="number" step="0.00000001"/></div>
+    <div class="fg"><label class="fl">Known Longitude</label><input id="knownLon" class="fc" placeholder="e.g. 36.82198432" type="number" step="0.00000001"/></div>
+    <div id="localizeResult" style="display:none;background:rgba(0,181,160,.08);border:1px solid rgba(0,181,160,.25);border-radius:var(--r);padding:12px;font-size:13px;color:var(--t2);margin:10px 0;font-family:'Courier Prime',monospace"></div>
+    <div style="background:rgba(0,181,160,.06);border:1px solid rgba(0,181,160,.15);border-radius:var(--r);padding:10px 12px;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:14px">
+      Tip: For best results, use the PICK POINT button first while standing on the control point, then open this dialog — it will use the averaged GPS position.
+    </div>
+    <div class="m-btns">
+      <button class="btn btn-p btn-lg" onclick="applyLocalization()" style="flex:1">✓ APPLY SHIFT</button>
+      <button class="btn btn-gh" onclick="closeLocalizeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
