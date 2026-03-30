@@ -1,0 +1,8 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+httpx==0.27.0
+earthengine-api==0.1.412
+pyproj==3.6.1
+numpy==2.2.4
+scikit-learn==1.6.1
+pydantic==2.7.1
